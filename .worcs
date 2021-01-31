@@ -1,0 +1,10 @@
+worcs_version: 0.1.6.4
+creator: Lissa102
+entry_point: manuscript/manuscript.Rmd
+data:
+  df.csv:
+    synthetic: synthetic_df.csv
+    codebook: codebook_df.Rmd
+checksums:
+  df.csv: fe5f77e1dc2fb0b75336b5d17856eb78
+  synthetic_df.csv: 4bb5932d1d3046334be28f2cb4ce9a8a
