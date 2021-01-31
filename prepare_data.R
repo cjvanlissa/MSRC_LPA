@@ -4,12 +4,10 @@
 # to store the data.
 
 library(worcs)
-library(foreign)
-library(ggplot2)
-library(tidySEM)
 df <- read.csv("MSRC LPA Data 1.6.21 NO IDs for LPA.csv", stringsAsFactors = FALSE)
 df[df == 888] <- NA
 
 desc <- descriptives(df)
 
 closed_data(df)
+
