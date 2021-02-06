@@ -14,3 +14,6 @@
 df.csv
 !synthetic_df.csv
 !codebook_df.csv
+*.dat
+*.inp
+*.out

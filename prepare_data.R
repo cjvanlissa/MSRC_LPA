@@ -4,10 +4,18 @@
 # to store the data.
 
 library(worcs)
-df <- read.csv("MSRC LPA Data 1.6.21 NO IDs for LPA.csv", stringsAsFactors = FALSE)
-df[df == 888] <- NA
+library(foreign)
+df <- read.spss("Goodman data 8_19 1.30.21 for Caspar.sav", to.data.frame = T)
+df$Sitecode <- factor(df$Sitecode)
+df$Gender <- droplevels(df$Gender_MF_Only)
+df$Education <- as.numeric(df$EducationJT)
+df$Method <- droplevels(df$CDE15_Method_Condensed_NEW)
+df$Branch <- factor(gsub("^(Army|Air Force|Navy|Marine Corps|Coast Guard).*$", "\\1", df$Military_Branch))
+df[c("ID", "Gender_MF_Only", "EducationJT", "CDE15_CODE", "CDE15_Method_Condensed_NEW", "CDE15_Method_Condensed", "CDE15_Method_More_Condensed", "Military_Branch")] <- NULL
+
+# Retain only cases with 1 attempt or more
+df <- df[which(df$CDE13 > 0), ]
 
 desc <- descriptives(df)
 
 closed_data(df)
-

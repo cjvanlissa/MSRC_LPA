@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Results MSRC latent class analysis"
 output: github_document
 date: '`r format(Sys.time(), "%d %B, %Y")`'
 bibliography: references.bib
@@ -12,27 +12,75 @@ library("worcs")
 # and end that file with either open_data(yourdata), or closed_data(yourdata).
 # Then, uncomment the line below to load the original or synthetic data
 # (whichever is available), to allow anyone to reproduce your code:
-# load_data()
+load_data()
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-This manuscript uses the Workflow for Open Reproducible Code in Science [@vanlissaWORCSWorkflowOpen2020] to ensure reproducibility and transparency. All code <!--and data--> are available at <git@github.com:cjvanlissa/MSRC_LPA.git>.
+This manuscript uses the Workflow for Open Reproducible Code in Science [@vanlissaWORCSWorkflowOpen2020] to ensure reproducibility and transparency. All code <!--and data--> are available at <https://github.com/cjvanlissa/MSRC_LPA>.
 
-This is an example of a non-essential citation [@@vanlissaWORCSWorkflowOpen2020]. If you change the rendering function to `worcs::cite_essential`, it will be removed.
 
 <!--The function below inserts a notification if the manuscript is knit using synthetic data. Make sure to insert it after load_data().-->
 `r notify_synthetic()`
 
-## GitHub Documents
+## Descriptive statistics
 
-This is an R Markdown format used for publishing markdown documents to GitHub. When you click the **Knit** button all R code chunks are run and a markdown file (.md) suitable for publishing to GitHub is generated.
+```{r}
+library(ggplot2)
+library(tidySEM)
+library(tidyLPA)
+desc <- descriptives(df)
 
-## Including Code
+use_vars <- c("CDE7_NEW", "CDE8", "CDE9", "CDE10", "CDE11", "CDE12", "SA_Freq_Rank", "NSSI_Freq_Rank")
 
-You can include R code in the document as follows:
+df_plot <- do.call(rbind, lapply(grep("^CD", use_vars, value = TRUE), function(x){data.frame(Variable = x, value = df[[x]])}))
 
-```{r cars}
-summary(cars)
+p_bar <- ggplot(df_plot, aes(x = value)) + 
+  geom_bar() +
+  facet_wrap(~Variable, scales = "free") +
+  theme_bw()
+
+ggsave("bar.png", device = "png", width = 200, height = 120, units = "mm", dpi = 300)
+
+df_plot <- do.call(rbind, lapply(grep("Freq", use_vars, value = TRUE), function(x){data.frame(Variable = x, value = df[[x]])}))
+
+df$NSSI_log <- log(df$NSSI_Freq_Rank+.0000001)
+df$SA_log <- log(df$SA_Freq_Rank+.0000001)
+df$NSSI_inv <- 1/(df$NSSI_Freq_Rank+.0000001)
+df$SA_inv <- 1/(df$SA_Freq_Rank+.0000001)
+df$NSSI_sqrt <- sqrt(df$NSSI_Freq_Rank)
+df$SA_sqrt <- sqrt(df$SA_Freq_Rank)
+df$NSSI_dummy <- as.numeric(df$NSSI_Freq_Rank == 0)
+df$SA_dummy <- as.numeric(df$SA_Freq_Rank == 0)
+df_plot <- do.call(rbind, lapply(grep("(NSSI|SA)", names(df), value = TRUE), function(x){
+  data.frame(Variable = paste0("Variable: ", gsub("^(.+?)_.*$", "\\1", x), " (", gsub("_", " ", gsub("^.+?_(.*)$", "\\1", x)), ")"), 
+             value = df[[x]])
+}))
+df_plot$Variable <- ordered(df_plot$Variable, levels = unique(df_plot$Variable))
+p_dens <- ggplot(df_plot, aes(x = value)) + 
+  geom_density() +
+  facet_wrap(~Variable, scales = "free", ncol = 2) +
+  theme_bw()
+
+ggsave("density.png", device = "png", width = 200, height = 350, units = "mm", dpi = 300)
+```
+
+## Analysis
+
+```{r model}
+
+# MSRC <- data[1:1905,] %>%
+#   select (CDE7_NEW, CDE8, CDE9, CDE10, CDE11, CDE12, SA_Freq_Rank, NSSI_Freq_Rank) %>%
+#   single_imputation() %>%
+#   estimate_profiles(1:10, variances="equal", covariances="zero")
+# 
+# MSRC
+# 
+# LPABest <- data[1:1905,] %>%
+#   select(CDE7_NEW, CDE8, CDE9, CDE10, CDE11, CDE12, SA_Freq_Rank, NSSI_Freq_Rank) %>%
+#   single_imputation() %>%
+#   estimate_profiles(9, variances="equal", covariances="zero")
+# get_fit(LPABest)
+# 
 ```
 
 ## Including Plots
