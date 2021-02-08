@@ -261,7 +261,7 @@ rownames(cats) <- NULL
 knitr::kable(cats, digits = 2, caption = "Class differences in categorical auxiliary variables.")
 ```
 
-```{r figcont, include = TRUE}
+```{r figcont, eval = FALSE}
 tab <- res_cont$lcCondMeans$overall
 tab$var <- rename_vars[tab$var]
 tab$df <- NULL
@@ -271,7 +271,7 @@ rownames(tab) <- NULL
 knitr::kable(tab, digits = 2, caption = "Class differences in continuous auxiliary variables.")
 ```
 
-```{r tabcat, include = TRUE}
+```{r figcat, eval = FALSE}
 ct_dct <- cat_dict
 names(ct_dct) <- toupper(names(ct_dct))
 
