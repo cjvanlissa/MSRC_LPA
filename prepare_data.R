@@ -12,6 +12,7 @@ df$Education <- as.numeric(df$EducationJT)
 df$Method <- droplevels(df$CDE15_Method_Condensed_NEW)
 df$Branch <- factor(gsub("^(Army|Air Force|Navy|Marine Corps|Coast Guard).*$", "\\1", df$Military_Branch))
 df[c("ID", "Gender_MF_Only", "EducationJT", "CDE15_CODE", "CDE15_Method_Condensed_NEW", "CDE15_Method_Condensed", "CDE15_Method_More_Condensed", "Military_Branch")] <- NULL
+df[c("CDE7_NEW", "CDE8", "CDE9", "CDE10", "CDE11", "CDE12", "CDE16")] <- lapply(df[c("CDE7_NEW", "CDE8", "CDE9", "CDE10", "CDE11", "CDE12", "CDE16")], as.integer)
 
 # Retain only cases with 1 attempt or more
 df <- df[which(df$CDE13 > 0), ]

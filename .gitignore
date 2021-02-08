@@ -17,3 +17,5 @@ df.csv
 *.dat
 *.inp
 *.out
+*.RData
+*.dgm

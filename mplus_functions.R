@@ -2,8 +2,8 @@ library(MplusAutomation)
 library(tibble)
 lpa_model <- function(num, df_anal){
   desc <- descriptives(df_anal)
-  browser()
-  cat_vars <- desc$name[desc$unique < 8 & desc$type %in% c("integer", "factor", "character")]
+  #browser()
+  cat_vars <- desc$name[desc$unique < 9 & desc$type %in% c("integer", "factor", "character")]
   cont_vars <- desc$name[!desc$name %in% cat_vars]
   mod <- mplusObject(
     TITLE = paste0("Categorical only ", num, " classes"),
@@ -144,4 +144,46 @@ transformations <- function(df){
     facet_wrap(~transformation, scales = "free", ncol = length(vars)) +
     theme_bw() +
     scale_y_continuous(labels = NULL)
+}
+
+
+extract_cat_tests <- function(txt){
+  start <- grep("EQUALITY TESTS OF MEANS/PROBABILITIES ACROSS CLASSES", txt, fixed = TRUE)
+  end <- grep("TECHNICAL 14 OUTPUT", txt, fixed = TRUE)-1
+  txt <- txt[start:end]
+  txt <- txt[!txt == ""]
+  sections <- which(!grepl(" ", txt, fixed = TRUE))
+  out <- mapply(function(st, en){
+    thetxt <- txt[st:en]
+    props <- thetxt[grepl("Class", thetxt, fixed = TRUE) | grepl("Category", thetxt, fixed = TRUE) ]
+    props <- strsplit(props, "\\s+")
+    lengths <- sapply(props, length)
+    labs <- sapply(props[lengths == 3], `[`, 3)
+    props <- data.frame(do.call(rbind, props[lengths == 9]))
+    props$X3 <- as.integer(props$X3)
+    which_lab <- 1
+    props$X1[1] <- labs[which_lab]
+    for(i in 2:nrow(props)){
+      if(!sign(props$X3[i]-props$X3[i-1] > 0)){
+        which_lab <- which_lab + 1
+      }
+      props$X1[i] <- labs[which_lab]
+    }
+    names(props) <- c("Class", "X2", "Category", "Prob", "se", "OR", "se_OR", "ci.lower", "ci.upper")
+    props <- props[, -2]
+    
+    tests <- thetxt[grepl("Overall test", thetxt, fixed = TRUE) | grepl(" vs. ", thetxt, fixed = TRUE) ]
+    tests <- strsplit(tests, "\\s+")
+    lengths <- sapply(tests, length)
+    tests[lengths == 6] <- lapply(tests[lengths == 6], function(x){
+      c(x[1], "", x[2], "", x[c(2,4:6)])
+    })
+    tests <- data.frame(do.call(rbind, tests))
+    
+    tests <- tests[, -c(1,2,4)]
+    names(tests) <- c("Class", "Versus", "Chi.square", "p", "df")
+    list(parameters = props, tests = tests)
+  }, st = sections, en = c(sections[-1], length(txt)), SIMPLIFY = FALSE)
+  names(out) <- txt[sections]
+  out
 }

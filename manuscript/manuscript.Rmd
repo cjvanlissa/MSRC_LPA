@@ -1,6 +1,6 @@
 ---
 title: "Results MSRC latent class analysis"
-output: github_document
+output: bookdown::github_document2
 date: '`r format(Sys.time(), "%d %B, %Y")`'
 bibliography: references.bib
 knit: worcs::cite_all
@@ -8,13 +8,13 @@ knit: worcs::cite_all
 
 ```{r setup, include=FALSE}
 library("worcs")
-# We recommend that you prepare your raw data for analysis in 'prepare_data.R',
-# and end that file with either open_data(yourdata), or closed_data(yourdata).
-# Then, uncomment the line below to load the original or synthetic data
-# (whichever is available), to allow anyone to reproduce your code:
-load_data()
-knitr::opts_chunk$set(echo = TRUE)
+source("../mplus_functions.R")
+knitr::opts_chunk$set(include = FALSE, echo = FALSE, message = FALSE, warning = FALSE, error = TRUE)
+options(knitr.kable.NA = '')
+run_everything <- FALSE
 ```
+
+**NOTE: I've written a first-glance interpretation of the results as a placeholder. Please interpret the results substantively at your own discretion.**
 
 This manuscript uses the Workflow for Open Reproducible Code in Science [@vanlissaWORCSWorkflowOpen2020] to ensure reproducibility and transparency. All code <!--and data--> are available at <https://github.com/cjvanlissa/MSRC_LPA>.
 
@@ -28,11 +28,44 @@ This manuscript uses the Workflow for Open Reproducible Code in Science [@vanlis
 library(ggplot2)
 library(tidySEM)
 library(tidyLPA)
+load_data()
 desc <- descriptives(df)
+# We're aiming to characterize profiles/classes based on the characteristics of suicide attempts (CDE7_NEW, CDE8, CDE9, CDE10, CDE11, CDE12, CDE13, CDE17).  
 
-use_vars <- c("CDE7_NEW", "CDE8", "CDE9", "CDE10", "CDE11", "CDE12", "SA_Freq_Rank", "NSSI_Freq_Rank")
+indicators <- c("CDE7_NEW", "CDE8", "CDE9", "CDE10", "CDE11", 
+"CDE12", "CDE13","CDE17")
 
-df_plot <- do.call(rbind, lapply(grep("^CD", use_vars, value = TRUE), function(x){data.frame(Variable = x, value = df[[x]])}))
+p_trans <- transformations(df[c("CDE13", "CDE17")])
+# Note that due to the extreme censored nature of these variables, most variance is alreay described by a median split
+
+df$CDE13 <- as.integer(!df$CDE13 == 1)
+df$CDE17 <- as.integer(df$CDE17 == 0)
+
+# We're primarily interested in whether resulting profile membership is related to the method of suicide attempt used and the level of medical attention necessitated (our outcomes). 
+# CDE15_Method_Condensed_NEW (method)
+# CDE16 (medical attention necessitated).
+outcomes <- c("Method", "CDE16")
+
+# Auxiliary variables:  Age, Gender, Race, EducationJT, Any_Service. 
+aux <- c("Age", "Gender", "Race", "Education", "Any_Service")
+
+# c(
+# CDE7_NEW = "told_someone", 
+# CDE8 = "attempt", 
+# CDE9 = "fatal", 
+# CDE10 = "lethal", 
+# CDE11 = "intendie", 
+# CDE12 = "fixable", 
+# CDE13 = "times", 
+# CDE16 = "medical", 
+# CDE17 = "nssi"
+# )
+
+# CDE13: number of suicide attempts
+# CDE17: number of NSSI instances.
+
+df_plot <- data.frame(lapply(df[indicators], as.numeric))
+df_plot <- do.call(rbind, lapply(names(df_plot), function(x){data.frame(Variable = x, value = df_plot[[x]])}))
 
 p_bar <- ggplot(df_plot, aes(x = value)) + 
   geom_bar() +
@@ -41,54 +74,222 @@ p_bar <- ggplot(df_plot, aes(x = value)) +
 
 ggsave("bar.png", device = "png", width = 200, height = 120, units = "mm", dpi = 300)
 
-df_plot <- do.call(rbind, lapply(grep("Freq", use_vars, value = TRUE), function(x){data.frame(Variable = x, value = df[[x]])}))
 
-df$NSSI_log <- log(df$NSSI_Freq_Rank+.0000001)
-df$SA_log <- log(df$SA_Freq_Rank+.0000001)
-df$NSSI_inv <- 1/(df$NSSI_Freq_Rank+.0000001)
-df$SA_inv <- 1/(df$SA_Freq_Rank+.0000001)
-df$NSSI_sqrt <- sqrt(df$NSSI_Freq_Rank)
-df$SA_sqrt <- sqrt(df$SA_Freq_Rank)
-df$NSSI_dummy <- as.numeric(df$NSSI_Freq_Rank == 0)
-df$SA_dummy <- as.numeric(df$SA_Freq_Rank == 0)
-df_plot <- do.call(rbind, lapply(grep("(NSSI|SA)", names(df), value = TRUE), function(x){
-  data.frame(Variable = paste0("Variable: ", gsub("^(.+?)_.*$", "\\1", x), " (", gsub("_", " ", gsub("^.+?_(.*)$", "\\1", x)), ")"), 
-             value = df[[x]])
-}))
-df_plot$Variable <- ordered(df_plot$Variable, levels = unique(df_plot$Variable))
-p_dens <- ggplot(df_plot, aes(x = value)) + 
-  geom_density() +
-  facet_wrap(~Variable, scales = "free", ncol = 2) +
-  theme_bw()
-
-ggsave("density.png", device = "png", width = 200, height = 350, units = "mm", dpi = 300)
 ```
 
 ## Analysis
 
-```{r model}
+We conducted a latent class analysis for 1-7 classes in Mplus 8.4.
+All latent class indicators were coded as categorical.
+Class membership for categorical variables is determined by the proportion of responses in each category.
+We used tidyLPA to determine the optimum number of classes (see Table \@ref(tab:tabres)).
+According to the BIC, the model fit improved dramatically from a one-class solution to a two-class solution, and continued improving until a five-class solution.
+According to the bootstrapped likelihood ratio test, model fit improved significantly with an increasing number of classes.
+However, all solutions with more than two classes had low posterior classification probabilities (<= .77),
+and the smallest class contained only approximately 10% of all cases.
+We thus selected a two-class solution for our final analysis.
+Note that the entropy for all models is low, which indicates that classes are not clearly separable.
 
-# MSRC <- data[1:1905,] %>%
-#   select (CDE7_NEW, CDE8, CDE9, CDE10, CDE11, CDE12, SA_Freq_Rank, NSSI_Freq_Rank) %>%
-#   single_imputation() %>%
-#   estimate_profiles(1:10, variances="equal", covariances="zero")
-# 
-# MSRC
-# 
-# LPABest <- data[1:1905,] %>%
-#   select(CDE7_NEW, CDE8, CDE9, CDE10, CDE11, CDE12, SA_Freq_Rank, NSSI_Freq_Rank) %>%
-#   single_imputation() %>%
-#   estimate_profiles(9, variances="equal", covariances="zero")
-# get_fit(LPABest)
-# 
+```{r numclasses}
+if(run_everything){
+  df_anal <- df[indicators]
+  res <- run_lpa(1:7, df_anal)
+  saveRDS(res, "res1-7.RData")
+} else {
+  res <- readRDS("res1-7.RData")
+}
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r tabres, include = TRUE, results="asis"}
+tab <- get_fit(res)[,c("Classes", "AIC", "BIC", "Entropy", "prob_min", "prob_max", "n_min", "n_max", "BLRT_p")]
+write.csv(tab, "tab_numclasses.csv", row.names = FALSE)
+knitr::kable(tab, digits = 2, caption = "Fit of latent class models")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Final model
+
+For all indicator variables, the proportion of responses by response category and latent class are displayed in Figure \@ref(fig:figpresprob). 
+These same results are rescaled to the approximate number of participants per class (based on summed posterior class probabilities) in Figure \@ref(fig:figpres).
+Both figures show that participants in the first class were relatively more likely to report higher scores on being certain that their attempt would be fatal and lethal, intent to die, and a belief that their attempt could not be fixed by medical attention, as compared to participants in the second class.
+Participants in the first class were relatively less likely to report a history of NSSI.
+
+```{r figpresprob, include = TRUE, fig.cap="Results of the two-class latent class model. Proportion of responses by response category and latent class."}
+library(ggplot2)
+df_plot <- res$model_unknown_class_2$model$parameters$probability.scale
+df_plot$Frequency <- res$model_unknown_class_2$model$class_counts$posteriorProb$count[as.integer(df_plot$LatentClass)] * df_plot$est
+names(df_plot) <- c("Variable", "Category", "est", "se", "est_se", "pval", "Class", "Frequency")
+
+rename_vars <- c(
+CDE7_NEW = "Told someone",
+CDE8 = "Will likely attempt",
+CDE9 = "Certain fatal",
+CDE10 = "Certain lethal",
+CDE11 = "Intended to die",
+CDE12 = "Could be fixed",
+CDE13 = "Attempts",
+CDE16 = "Medical attention (DV)",
+CDE17 = "NSSI",
+AGE = "Age (cov)",
+EDUCATION = "Education (cov)",
+GENDER = "Gender (cov)",
+ANY_SERVICE = "Service (cov)",
+METHOD = "Method (DV)",
+RACE = "Race (cov)"
+)
+df_plot$Variable <- ordered(df_plot$Variable, 
+                            levels = unique(df_plot$Variable),
+                            labels = rename_vars[unique(df_plot$Variable)])
+
+
+p_res_prob <- ggplot(df_plot, aes(x = Class, y = est, fill = Category)) + geom_bar(stat = "identity", position = position_fill(reverse = TRUE)) + facet_wrap(~Variable, nrow = 4, scales = "free") + ylab(NULL) + theme_bw()# + theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+ggsave("p_res_prob.png", device = "png", width = 200, height = 180, units = "mm", dpi = 300)
+p_res_prob
+```
+
+```{r figpres, include = TRUE, fig.cap="Results of the two-class latent class model. Proportion of responses by response category and latent class, rescaled to the number of participants per latent class (based on posterior class probability)."}
+p_res <- ggplot(df_plot, aes(x = Category, y = Frequency, fill = Class)) + geom_bar(stat = "identity", position = position_stack(reverse = TRUE)) + facet_wrap(~Variable, nrow = 4, scales = "free_x") + xlab(NULL) + theme_bw()
+ggsave("p_res.png", device = "png", width = 200, height = 180, units = "mm", dpi = 300)
+p_res
+```
+
+## Auxiliary variables
+
+```{r mplusmodel}
+aux_cat <- c("Gender", "Race", "Any_Service", "Method")
+  aux_cont <- c("Age", "Education", "CDE16")
+  df_anal <- df[c(indicators, aux_cat, aux_cont)]
+  cat_dict <- lapply(df_anal[aux_cat], levels)
+  df_anal[aux_cat] <- lapply(df_anal[aux_cat], as.integer)
+  cat_vars <- c("CDE7_NEW", "CDE8",
+                "CDE9", "CDE10", "CDE11", "CDE12", "CDE13", 
+                "CDE17")
+if(run_everything){
+  mod_cont <- mplusObject(
+    TITLE = paste0("2 class with auxiliary continuous"),
+    VARIABLE = paste0("CLASSES = c (2);\n",
+                      paste0("CATEGORICAL = \n", paste0(cat_vars, collapse = "\n"), ";\n"),
+                      paste0("USEVARIABLES = \n", paste0(indicators, collapse = "\n"), ";\n"),
+                      paste0(c("AUXILIARY = \n",
+                               paste0(aux_cont, " (BCH)\n"),
+                               #paste0(aux_cat, " (DCATEGORICAL)\n"),
+                               ";\n"), collapse = "")),
+    ANALYSIS = "TYPE IS MIXTURE;\nLRTSTARTS = 0 0 40 10;\nOPTSEED = 637345;\n",
+    OUTPUT = "TECH14;",
+    SAVEDATA = paste0("FILE IS dat_2_aux_cont.dat;\nSAVE = CPROBABILITIES;"),
+    usevariables = names(df_anal),
+    rdata = df_anal
+  )
+  
+  res_cont <- mplusModeler(mod_cont,
+                           modelout = paste0("mod_2_aux_cont.inp"),
+                           run = 1L)$results
+  
+  mod_cat <- mplusObject(
+    TITLE = paste0("2 class with auxiliary categorical"),
+    VARIABLE = paste0("CLASSES = c (2);\n",
+                      paste0("CATEGORICAL = \n", paste0(cat_vars, collapse = "\n"), ";\n"),
+                      paste0("USEVARIABLES = \n", paste0(indicators, collapse = "\n"), ";\n"),
+                      paste0(c("AUXILIARY = \n",
+                               #paste0(aux_cont, " (BCH)\n"),
+                               paste0(aux_cat, " (DCATEGORICAL)\n"),
+                               ";\n"), collapse = "")),
+    ANALYSIS = "TYPE IS MIXTURE;\nLRTSTARTS = 0 0 40 10;\nOPTSEED = 637345;\n",
+    OUTPUT = "TECH14;",
+    SAVEDATA = paste0("FILE IS dat_2_aux_cat.dat;\nSAVE = CPROBABILITIES;"),
+    usevariables = names(df_anal),
+    rdata = df_anal
+  )
+  
+  mplusModeler(mod_cat,
+               modelout = paste0("mod_2_aux_cat.inp"),
+               run = 0L)
+  runModels("mod_2_aux_cat.inp")
+  res_cat <- extract_cat_tests(readLines("mod_2_aux_cat.out"))
+} else {
+  res_cont <- readModels("mod_2_aux_cont.out")
+  res_cat <- extract_cat_tests(readLines("mod_2_aux_cat.out"))
+}
+```
+
+We were interested in whether these classes differed on two outcome variables
+and several covariates.
+To prevent the inclusion of these auxiliary variables from influencing the latent class measurement model,
+we used the three-step method described by @asparouhovAuxiliaryVariablesMixture2014.
+Results for continuous auxiliary variables are displayed in Table \@ref(tab:tabcont),
+and results for categorical auxiliary variables are displayed in Table \@ref(tab:tabcat).
+All auxiliary variables differed significantly across the two classes.
+
+With regard to the method of the attempt,
+the most notable differences between the classes were that the first class was more likely than the second to report shooting as a method,
+and the second class was more likely than the first to report cutting as a method.
+With regard to the amount of medical attention required, the first class scored significantly higher than the second.
+
+With regard to the covariates, the first class consisted of a relatively larger proportion of males than the second class.
+The first class was significantly older and lower educated than the second.
+The first class was relatively more likely to be currently serving or a veteran, whereas the second class was relatively more likely to have no military service record.
+Although there was a significant association between class membership and race, the chi square value was small, and no clear pattern emerged from the results.
+
+```{r tabcont, include = TRUE}
+tab <- res_cont$lcCondMeans$overall
+tab$var <- rename_vars[tab$var]
+tab$df <- NULL
+names(tab)[1] <- "Variable"
+tab <- tab[c(grep("(DV)", tab$Variable), grep("(cov)", tab$Variable)), ]
+rownames(tab) <- NULL
+knitr::kable(tab, digits = 2, caption = "Class differences in continuous auxiliary variables.")
+```
+
+```{r tabcat, include = TRUE}
+ct_dct <- cat_dict
+names(ct_dct) <- toupper(names(ct_dct))
+
+cats <- do.call(rbind, lapply(c("METHOD", "GENDER", "RACE", "ANY_SERVICE"), function(thename){
+  x <- res_cat[[thename]]
+  out <- x$parameters[, c("Class", "Category", "Prob")]
+  out <- reshape(out, v.names = "Prob", timevar = "Class", idvar = "Category", direction = "wide")
+  out$chisq <- NA
+  out$p <- NA
+  out$chisq[1] <- x$tests$Chi.square
+  out$p[1] <- x$tests$p
+  out <- cbind(Variable = NA, out)
+  out$Variable[1] <- thename
+  out$Category <- ct_dct[[thename]][out$Category]
+  out
+}))
+cats$Variable <- rename_vars[cats$Variable]
+rownames(cats) <- NULL
+knitr::kable(cats, digits = 2, caption = "Class differences in categorical auxiliary variables.")
+```
+
+```{r figcont, include = TRUE}
+tab <- res_cont$lcCondMeans$overall
+tab$var <- rename_vars[tab$var]
+tab$df <- NULL
+names(tab)[1] <- "Variable"
+tab <- tab[c(grep("(DV)", tab$Variable), grep("(cov)", tab$Variable)), ]
+rownames(tab) <- NULL
+knitr::kable(tab, digits = 2, caption = "Class differences in continuous auxiliary variables.")
+```
+
+```{r tabcat, include = TRUE}
+ct_dct <- cat_dict
+names(ct_dct) <- toupper(names(ct_dct))
+
+cats <- do.call(rbind, lapply(c("METHOD", "GENDER", "RACE", "ANY_SERVICE"), function(thename){
+  x <- res_cat[[thename]]
+  out <- x$parameters[, c("Class", "Category", "Prob")]
+  out <- reshape(out, v.names = "Prob", timevar = "Class", idvar = "Category", direction = "wide")
+  out$chisq <- NA
+  out$p <- NA
+  out$chisq[1] <- x$tests$Chi.square
+  out$p[1] <- x$tests$p
+  out <- cbind(Variable = NA, out)
+  out$Variable[1] <- thename
+  out$Category <- ct_dct[[thename]][out$Category]
+  out
+}))
+cats$Variable <- rename_vars[cats$Variable]
+rownames(cats) <- NULL
+knitr::kable(cats, digits = 2, caption = "Class differences in categorical auxiliary variables.")
+```
+
