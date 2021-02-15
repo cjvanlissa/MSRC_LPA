@@ -38,6 +38,8 @@ indicators <- c("CDE7_NEW", "CDE8", "CDE9", "CDE10", "CDE11",
 
 p_trans <- transformations(df[c("CDE13", "CDE17")])
 # Note that due to the extreme censored nature of these variables, most variance is alreay described by a median split
+props <- c(round(100*prop.table(table(df[["CDE13"]]))[1]),
+           round(100*prop.table(table(df[["CDE17"]]))[1]))
 
 df$CDE13 <- as.integer(!df$CDE13 == 1)
 df$CDE17 <- as.integer(df$CDE17 == 0)
@@ -83,15 +85,15 @@ Two of the latent class indicators,
 NSSI history and suicide attempt frequency,
 were measured at a continuous level of measurement.
 However, these variables were censored and positively skewed in the extreme,
-such that $`r round(100*prop.table(table(df[["CDE13"]]))[1])`\%$ of participants reported the lowest level of NSSI, and $`r round(100*prop.table(table(df[["CDE17"]]))[1])`\%$ of participants reported the lowest level of suicide attempts.
+such that $`r props[1]`\%$ of participants reported the lowest level of NSSI, and $`r props[2]`\%$ of participants reported the lowest level of suicide attempts.
 Based on a visual comparison of transformations for skewed variables (square root, log, inverse, rank-ordering, and median dichotomization),
 it was observed that most transformations split the sample into this lowest category versus all other response levels.
 This indicates that, despite the continuous measurement scale, these variables convey information at the binary level.
 We thus used median dichotomization to account for the deviation from normality,
 and treated these dichotomized variables as ordinal.
-This is a validated approach for dealing with severely censored variables (Muthén & Speckart, 1983).
+This is a validated approach for dealing with severely censored variables [@muthenCategorizingSkewedLimited1983].
 
-```{r tabdesc, results = "asis"}
+```{r tabdesc, include = TRUE, results = "asis"}
 knitr::kable(desc, caption = "Descriptive statistics")
 ```
 
@@ -174,13 +176,30 @@ p_res
 
 ```{r mplusmodel}
 aux_cat <- c("Gender", "Race", "Any_Service", "Method")
-  aux_cont <- c("Age", "Education", "CDE16")
-  df_anal <- df[c(indicators, aux_cat, aux_cont)]
-  cat_dict <- lapply(df_anal[aux_cat], levels)
-  df_anal[aux_cat] <- lapply(df_anal[aux_cat], as.integer)
-  cat_vars <- c("CDE7_NEW", "CDE8",
-                "CDE9", "CDE10", "CDE11", "CDE12", "CDE13", 
-                "CDE17")
+aux_cont <- c("Age", "Education", "CDE16")
+df_anal <- df[c(indicators, aux_cat, aux_cont)]
+cat_dict <- lapply(df_anal[aux_cat], levels)
+df_anal[aux_cat] <- lapply(df_anal[aux_cat], as.integer)
+cat_vars <- c("CDE7_NEW", "CDE8",
+              "CDE9", "CDE10", "CDE11", "CDE12", "CDE13", 
+              "CDE17")
+
+  # Create dummies for all categories to get by-category comparisons
+  df_dum <- df[c(indicators, aux_cat, aux_cont)]
+  dum_vars <- aux_cat[sapply(df_dum[aux_cat], function(x){length(unique(na.omit(x)))}) > 2]
+  the_opt <- getOption("na.action")
+  options(na.action='na.pass')
+  dummies <- model.matrix(as.formula(paste0("~ -1 + ", paste0(dum_vars, collapse = " + "))), df_dum,
+                          contrasts.arg = lapply(df_dum[dum_vars], contrasts, contrasts=FALSE)) 
+  
+  dummies <- data.frame(dummies, check.names = FALSE)
+  options(na.action=the_opt)
+  for(i in dum_vars){
+    names(dummies) <- gsub(paste0("^", i, "(?!Other)"), "", names(dummies), perl = TRUE)
+  }
+  dummie_dict <- gsub("^.+?Other", "Other", names(dummies))
+  names(dummies) <- gsub("[ /\\(].*", "", names(dummies))
+  df_dum <- cbind(df_dum, dummies)
 if(run_everything){
   mod_cont <- mplusObject(
     TITLE = paste0("2 class with auxiliary continuous"),
@@ -223,9 +242,36 @@ if(run_everything){
                run = 0L)
   runModels("mod_2_aux_cat.inp")
   res_cat <- extract_cat_tests(readLines("mod_2_aux_cat.out"))
+  
+
+  
+  mod_catdum <- mplusObject(
+    TITLE = paste0("2 class with auxiliary categorical dummies"),
+    VARIABLE = paste0("CLASSES = c (2);\n",
+                      paste0("CATEGORICAL = \n", paste0(cat_vars, collapse = "\n"), ";\n"),
+                      paste0("USEVARIABLES = \n", paste0(indicators, collapse = "\n"), ";\n"),
+                      paste0(c("AUXILIARY = \n",
+                               #paste0(aux_cont, " (BCH)\n"),
+                               paste0(names(dummies), " (DCATEGORICAL)\n"),
+                               ";\n"), collapse = "")),
+    ANALYSIS = "TYPE IS MIXTURE;\nLRTSTARTS = 0 0 40 10;\nOPTSEED = 637345;\n",
+    OUTPUT = "TECH14;",
+    SAVEDATA = paste0("FILE IS dat_2_aux_catdum.dat;\nSAVE = CPROBABILITIES;"),
+    usevariables = c(names(df_anal), names(dummies)),
+    rdata = df_dum
+  )
+  
+  mplusModeler(mod_catdum,
+               modelout = paste0("mod_2_aux_catdum.inp"),
+               run = 0L)
+  runModels("mod_2_aux_catdum.inp")
+  res_catdum <- extract_cat_tests(readLines("mod_2_aux_catdum.out"))
+  
 } else {
   res_cont <- readModels("mod_2_aux_cont.out")
   res_cat <- extract_cat_tests(readLines("mod_2_aux_cat.out"))
+  res_catdum <- extract_cat_tests(readLines("mod_2_aux_catdum.out"))
+  names(res_catdum) <- dummie_dict
 }
 ```
 
@@ -275,6 +321,7 @@ cats <- do.call(rbind, lapply(c("METHOD", "GENDER", "RACE", "ANY_SERVICE"), func
   out
 }))
 cats$Variable <- rename_vars[cats$Variable]
+cats[["p 1 vs 2"]] <- sapply(res_catdum, function(x){x$tests$p[1]})[match(cats$Category, dummie_dict)]
 rownames(cats) <- NULL
 knitr::kable(cats, digits = 2, caption = "Class differences in categorical auxiliary variables.")
 ```
@@ -308,6 +355,8 @@ cats <- do.call(rbind, lapply(c("METHOD", "GENDER", "RACE", "ANY_SERVICE"), func
 }))
 cats$Variable <- rename_vars[cats$Variable]
 rownames(cats) <- NULL
+
+
 knitr::kable(cats, digits = 2, caption = "Class differences in categorical auxiliary variables.")
 ```
 
