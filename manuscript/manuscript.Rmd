@@ -78,6 +78,23 @@ ggsave("bar.png", device = "png", width = 200, height = 120, units = "mm", dpi =
 
 ```
 
+We present descriptive statistics of the observed variables below (see Table \@ref(tab:tabdesc)).
+Two of the latent class indicators,
+NSSI history and suicide attempt frequency,
+were measured at a continuous level of measurement.
+However, these variables were censored and positively skewed in the extreme,
+such that $`r round(100*prop.table(table(df[["CDE13"]]))[1])`\%$ of participants reported the lowest level of NSSI, and $`r round(100*prop.table(table(df[["CDE17"]]))[1])`\%$ of participants reported the lowest level of suicide attempts.
+Based on a visual comparison of transformations for skewed variables (square root, log, inverse, rank-ordering, and median dichotomization),
+it was observed that most transformations split the sample into this lowest category versus all other response levels.
+This indicates that, despite the continuous measurement scale, these variables convey information at the binary level.
+We thus used median dichotomization to account for the deviation from normality,
+and treated these dichotomized variables as ordinal.
+This is a validated approach for dealing with severely censored variables (Muthén & Speckart, 1983).
+
+```{r tabdesc, results = "asis"}
+knitr::kable(desc, caption = "Descriptive statistics")
+```
+
 ## Analysis
 
 We conducted a latent class analysis for 1-7 classes in Mplus 8.4.
