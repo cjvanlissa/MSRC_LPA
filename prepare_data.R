@@ -6,6 +6,9 @@
 library(worcs)
 library(foreign)
 df <- read.spss("Goodman data 8_19 1.30.21 for Caspar.sav", to.data.frame = T)
+
+# 3. Military Service Auxiliary Variable - Can you please remove/exclude from analyses the participants for whom it's unclear whether they are currently (vs. previously) serving when looking at military service as an auxiliary variable?
+df <- df[!df$Any_Service == "served but unclear if still serving (cougle)", ]
 df$Sitecode <- factor(df$Sitecode)
 df$Gender <- droplevels(df$Gender_MF_Only)
 df$Education <- as.numeric(df$EducationJT)

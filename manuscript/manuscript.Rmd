@@ -29,6 +29,7 @@ library(ggplot2)
 library(tidySEM)
 library(tidyLPA)
 load_data()
+
 desc <- descriptives(df)
 # We're aiming to characterize profiles/classes based on the characteristics of suicide attempts (CDE7_NEW, CDE8, CDE9, CDE10, CDE11, CDE12, CDE13, CDE17).  
 
