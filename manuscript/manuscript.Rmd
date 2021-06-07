@@ -331,6 +331,7 @@ cats <- do.call(rbind, lapply(names(res_cat), function(thename){
   out$chisq <- NA
   out$p <- NA
   out$cramersv <- NA
+  #out$n <- NA
   out$chisq[1] <- x$tests$chi_square
   out$p[1] <- x$tests$p
   the_n <- x$tests$n
