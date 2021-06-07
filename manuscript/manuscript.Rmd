@@ -11,7 +11,7 @@ library("worcs")
 source("../mplus_functions.R")
 knitr::opts_chunk$set(include = FALSE, echo = FALSE, message = FALSE, warning = FALSE, error = TRUE)
 options(knitr.kable.NA = '')
-run_everything <- FALSE
+run_everything <- TRUE
 ```
 
 **NOTE: I've written a first-glance interpretation of the results as a placeholder. Please interpret the results substantively at your own discretion.**
@@ -35,7 +35,7 @@ desc <- descriptives(df)
 
 indicators <- c("CDE7_NEW", "CDE8", "CDE9", "CDE10", "CDE11", 
 "CDE12", "CDE13","CDE17")
-
+#df <- df[rowSums(is.na(df[, indicators])) == 0, ]
 p_trans <- transformations(df[c("CDE13", "CDE17")])
 # Note that due to the extreme censored nature of these variables, most variance is alreay described by a median split
 props <- c(round(100*prop.table(table(df[["CDE13"]]))[1]),
@@ -315,6 +315,7 @@ names(tab)[1] <- "Variable"
 tab <- tab[c(grep("(DV)", tab$Variable), grep("(cov)", tab$Variable)), ]
 rownames(tab) <- NULL
 tab <- tab[, c("Variable", "m.1", "se.1", "ci1", "m.2", "se.2", "ci2","chisq", "p")]
+write.csv(tab, "classdiff_cont.csv", row.names = FALSE)
 knitr::kable(tab, digits = 2, caption = "Class differences in continuous auxiliary variables.")
 ```
 
@@ -355,6 +356,7 @@ for(i in names(test_res)){
 cats$Variable <- rename_vars[cats$Variable]
   #sapply(res_catdum, function(x){x$tests$p[1]})[match(cats$Category, dummie_dict)]
 rownames(cats) <- NULL
+write.csv(cats, "classdiff_cat.csv", row.names = FALSE)
 knitr::kable(cats, digits = 2, caption = "Class differences in categorical auxiliary variables.")
 ```
 
