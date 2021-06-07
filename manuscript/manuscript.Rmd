@@ -11,7 +11,7 @@ library("worcs")
 source("../mplus_functions.R")
 knitr::opts_chunk$set(include = FALSE, echo = FALSE, message = FALSE, warning = FALSE, error = TRUE)
 options(knitr.kable.NA = '')
-run_everything <- TRUE
+run_everything <- FALSE
 ```
 
 **NOTE: I've written a first-glance interpretation of the results as a placeholder. Please interpret the results substantively at your own discretion.**
