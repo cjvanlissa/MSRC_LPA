@@ -154,7 +154,8 @@ EDUCATION = "Education (cov)",
 GENDER = "Gender (cov)",
 ANY_SERVICE = "Service (cov)",
 METHOD = "Method (DV)",
-RACE = "Race (cov)"
+RACE = "Race (cov)",
+CARE_CAT = "Medical attention cat (DV)"
 )
 df_plot$Variable <- ordered(df_plot$Variable, 
                             levels = unique(df_plot$Variable),
@@ -175,7 +176,8 @@ p_res
 ## Auxiliary variables
 
 ```{r mplusmodel}
-aux_cat <- c("Gender", "Race", "Any_Service", "Method")
+df$care_cat <- factor(df$CDE16)
+aux_cat <- c("Gender", "Race", "Any_Service", "Method", "care_cat")
 aux_cont <- c("Age", "Education", "CDE16")
 df_anal <- df[c(indicators, aux_cat, aux_cont)]
 cat_dict <- lapply(df_anal[aux_cat], levels)
@@ -185,20 +187,28 @@ cat_vars <- c("CDE7_NEW", "CDE8",
               "CDE17")
 
   # Create dummies for all categories to get by-category comparisons
-  df_dum <- df[c(indicators, aux_cat, aux_cont)]
+  df_dum <- df_anal[c(indicators, aux_cat, aux_cont)]
+  df_dum <- data.frame(lapply(df_dum, as.factor))
   dum_vars <- aux_cat[sapply(df_dum[aux_cat], function(x){length(unique(na.omit(x)))}) > 2]
+  
   the_opt <- getOption("na.action")
   options(na.action='na.pass')
   dummies <- model.matrix(as.formula(paste0("~ -1 + ", paste0(dum_vars, collapse = " + "))), df_dum,
-                          contrasts.arg = lapply(df_dum[dum_vars], contrasts, contrasts=FALSE)) 
+                          contrasts.arg = lapply(df_dum[dum_vars], contrasts, contrasts = FALSE)) 
   
   dummies <- data.frame(dummies, check.names = FALSE)
   options(na.action=the_opt)
-  for(i in dum_vars){
-    names(dummies) <- gsub(paste0("^", i, "(?!Other)"), "", names(dummies), perl = TRUE)
-  }
-  dummie_dict <- gsub("^.+?Other", "Other", names(dummies))
-  names(dummies) <- gsub("[ /\\(].*", "", names(dummies))
+  names(dummies)[nchar(names(dummies)) > 8] <- paste0(
+    substr(names(dummies)[nchar(names(dummies)) > 8], 1, 7),
+    sub('.*(?=.$)', '', names(dummies)[nchar(names(dummies)) > 8], perl=T)
+  )
+    
+    
+  # for(i in dum_vars){
+  #   names(dummies) <- gsub(paste0("^", i, "(?!Other)"), "", names(dummies), perl = TRUE)
+  # }
+  #dummie_dict <- gsub("^.+?Other", "Other", names(dummies))
+  #names(dummies) <- gsub("[ /\\(].*", "", names(dummies))
   df_dum <- cbind(df_dum, dummies)
 if(run_everything){
   mod_cont <- mplusObject(
@@ -220,7 +230,7 @@ if(run_everything){
   res_cont <- mplusModeler(mod_cont,
                            modelout = paste0("mod_2_aux_cont.inp"),
                            run = 1L)$results
-  
+  #df_anal$Any_Service <- droplevels()
   mod_cat <- mplusObject(
     TITLE = paste0("2 class with auxiliary categorical"),
     VARIABLE = paste0("CLASSES = c (2);\n",
@@ -269,9 +279,10 @@ if(run_everything){
   
 } else {
   res_cont <- readModels("mod_2_aux_cont.out")
-  res_cat <- extract_cat_tests(readLines("mod_2_aux_cat.out"))
+  #res_cat <- extract_cat_tests(readLines("mod_2_aux_cat.out"))
+  res_cat <- readModels("mod_2_aux_cat.out")$lcCondMeans
   res_catdum <- extract_cat_tests(readLines("mod_2_aux_catdum.out"))
-  names(res_catdum) <- dummie_dict
+  #names(res_catdum) <- dummie_dict
 }
 ```
 
@@ -295,33 +306,54 @@ Although there was a significant association between class membership and race, 
 
 ```{r tabcont, include = TRUE}
 tab <- res_cont$lcCondMeans$overall
+tab$ci1 <- tidySEM::conf_int(tab$m.1, se = tab$se.1)
+tab$ci2 <- tidySEM::conf_int(tab$m.2, se = tab$se.2)
+tab$CramersV <- sqrt((as.numeric(tab$chisq)/res_cont$summaries$Observations)/1)
 tab$var <- rename_vars[tab$var]
 tab$df <- NULL
 names(tab)[1] <- "Variable"
 tab <- tab[c(grep("(DV)", tab$Variable), grep("(cov)", tab$Variable)), ]
 rownames(tab) <- NULL
+tab <- tab[, c("Variable", "m.1", "se.1", "ci1", "m.2", "se.2", "ci2","chisq", "p")]
 knitr::kable(tab, digits = 2, caption = "Class differences in continuous auxiliary variables.")
 ```
 
 ```{r tabcat, include = TRUE}
 ct_dct <- cat_dict
 names(ct_dct) <- toupper(names(ct_dct))
-
-cats <- do.call(rbind, lapply(c("METHOD", "GENDER", "RACE", "ANY_SERVICE"), function(thename){
+#c("METHOD", "GENDER", "RACE", "ANY_SERVICE")
+cats <- do.call(rbind, lapply(names(res_cat), function(thename){
   x <- res_cat[[thename]]
-  out <- x$parameters[, c("Class", "Category", "Prob")]
-  out <- reshape(out, v.names = "Prob", timevar = "Class", idvar = "Category", direction = "wide")
+  out <- x$parameters[, c("class", "category", "prob", "se")]
+  out$ci <- tidySEM::conf_int(as.numeric(out$prob), se = as.numeric(out$se))
+  out <- reshape(out, v.names = c("prob", "se", "ci"), timevar = "class", idvar = "category", direction = "wide")
   out$chisq <- NA
   out$p <- NA
-  out$chisq[1] <- x$tests$Chi.square
+  out$cramersv <- NA
+  out$chisq[1] <- x$tests$chi_square
   out$p[1] <- x$tests$p
+  the_n <- x$tests$n
+  if(is.null(the_n)) the_n <- res_cont$summaries$Observations
+  out$cramersv[1] <- sqrt((as.numeric(x$tests$chi_square)/as.numeric(the_n))/1)
   out <- cbind(Variable = NA, out)
   out$Variable[1] <- thename
-  out$Category <- ct_dct[[thename]][out$Category]
+  out$category <- ct_dct[[thename]][out$category]
   out
 }))
+test_res <- sapply(res_catdum, function(x){x$tests$p[1]})
+names_testres <- unique(gsub(".$", "", names(test_res)))
+test_res <- lapply(names_testres, function(x){test_res[grep(x, names(test_res))]})
+names(test_res) <- names_testres
+#test_res <- test_res[na.omit(pmatch(na.omit(cats$Variable), names(test_res)))]
+
+
+cats[["p 1 vs 2"]] <- NA
+for(i in names(test_res)){
+  #i = names(test_res)[1]
+  cats$`p 1 vs 2`[grep(i, cats$Variable):(grep(i, cats$Variable) + (length(test_res[[i]])-1))] <- test_res[[i]]
+}  
 cats$Variable <- rename_vars[cats$Variable]
-cats[["p 1 vs 2"]] <- sapply(res_catdum, function(x){x$tests$p[1]})[match(cats$Category, dummie_dict)]
+  #sapply(res_catdum, function(x){x$tests$p[1]})[match(cats$Category, dummie_dict)]
 rownames(cats) <- NULL
 knitr::kable(cats, digits = 2, caption = "Class differences in categorical auxiliary variables.")
 ```
