@@ -5,6 +5,8 @@ data:
   df.csv:
     synthetic: synthetic_df.csv
     codebook: codebook_df.Rmd
+    save_expression: write.csv(x = data, file = filename, row.names = FALSE)
+    load_expression: read.csv(file = filename, stringsAsFactors = TRUE)
 checksums:
-  df.csv: 889d50b5f15249c11578fb80ef477391
-  synthetic_df.csv: 664bfd026758946ad4c6e75313c8b8dc
+  df.csv: 957f887f9606fac6cc8dcbf1e36713a9
+  synthetic_df.csv: 398b08694e72bef355539c6416c03f2b
