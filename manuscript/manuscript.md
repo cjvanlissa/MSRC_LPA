@@ -134,9 +134,8 @@ auxiliary variables from influencing the latent class measurement model,
 we used the three-step method described by Asparouhov and Muthén (2014).
 Results for continuous auxiliary variables are displayed in Table
 <a href="#tab:tabcont">3</a>, and results for categorical auxiliary
-variables are displayed in Table
-<a href="#tab:tabcat"><strong>??</strong></a>. All auxiliary variables
-differed significantly across the two classes.
+variables are displayed in Table <a href="#tab:tabcat">4</a>. All
+auxiliary variables differed significantly across the two classes.
 
 With regard to the method of the attempt, the most notable differences
 between the classes were that the first class was more likely than the
@@ -162,19 +161,33 @@ pattern emerged from the results.
 
 Table 3: Class differences in continuous auxiliary variables.
 
-    ## Error in `[.data.frame`(x$parameters, , c("class", "category", "prob", : undefined columns selected
+| Variable                   | category                       | prob.1 | se.1  | ci.1           | prob.2 | se.2  | ci.2           | chisq   | p     | cramersv | p 1 vs 2 |
+|:---------------------------|:-------------------------------|:-------|:------|:---------------|:-------|:------|:---------------|:--------|:------|---------:|:---------|
+| Gender (cov)               | Female                         | 0.333  | 0.014 | \[0.31, 0.36\] | 0.467  | 0.016 | \[0.44, 0.50\] | 34.792  | 0.000 |     0.12 |          |
+|                            | Male                           | 0.667  | 0.014 | \[0.64, 0.69\] | 0.533  | 0.016 | \[0.50, 0.56\] |         |       |          |          |
+| Race (cov)                 | Asian                          | 0.025  | 0.005 | \[0.02, 0.03\] | 0.040  | 0.006 | \[0.03, 0.05\] | 14.349  | 0.026 |     0.07 | 0.057    |
+|                            | Black/African American         | 0.142  | 0.010 | \[0.12, 0.16\] | 0.166  | 0.012 | \[0.14, 0.19\] |         |       |          | 0.165    |
+|                            | Multiracial                    | 0.025  | 0.004 | \[0.02, 0.03\] | 0.011  | 0.004 | \[0.00, 0.02\] |         |       |          | 0.023    |
+|                            | Native American/Native Alaskan | 0.019  | 0.004 | \[0.01, 0.03\] | 0.010  | 0.003 | \[0.00, 0.02\] |         |       |          | 0.083    |
+|                            | Other (sometimes Hispanic)     | 0.093  | 0.008 | \[0.08, 0.11\] | 0.097  | 0.009 | \[0.08, 0.11\] |         |       |          | 0.717    |
+|                            | Pacific Islander               | 0.004  | 0.002 | \[0.00, 0.01\] | 0.002  | 0.001 | \[0.00, 0.00\] |         |       |          | 0.362    |
+|                            | White/Caucasian                | 0.693  | 0.013 | \[0.67, 0.72\] | 0.674  | 0.015 | \[0.64, 0.70\] |         |       |          | 0.372    |
+| Service (cov)              | Currently Serving              | 0.356  | 0.014 | \[0.33, 0.38\] | 0.310  | 0.016 | \[0.28, 0.34\] | 30.522  | 0.000 |     0.11 | 0.046    |
+|                            | No Military Service            | 0.265  | 0.013 | \[0.24, 0.29\] | 0.390  | 0.017 | \[0.36, 0.42\] |         |       |          | 0.000    |
+|                            | Veteran                        | 0.379  | 0.014 | \[0.35, 0.41\] | 0.300  | 0.016 | \[0.27, 0.33\] |         |       |          | 0.000    |
+| Method (DV)                | Cutting                        | 0.136  | 0.010 | \[0.12, 0.16\] | 0.200  | 0.012 | \[0.18, 0.22\] | 51.569  | 0.000 |     0.14 | 0.000    |
+|                            | Hanging/Asphyxiation           | 0.131  | 0.010 | \[0.11, 0.15\] | 0.122  | 0.010 | \[0.10, 0.14\] |         |       |          | 0.508    |
+|                            | Jumping                        | 0.049  | 0.006 | \[0.04, 0.06\] | 0.055  | 0.007 | \[0.04, 0.07\] |         |       |          | 0.557    |
+|                            | Other Method                   | 0.066  | 0.007 | \[0.05, 0.08\] | 0.076  | 0.008 | \[0.06, 0.09\] |         |       |          | 0.463    |
+|                            | Overdose                       | 0.491  | 0.014 | \[0.46, 0.52\] | 0.503  | 0.016 | \[0.47, 0.53\] |         |       |          | 0.679    |
+|                            | Shooting                       | 0.127  | 0.010 | \[0.11, 0.15\] | 0.044  | 0.007 | \[0.03, 0.06\] |         |       |          | 0.000    |
+| Medical attention cat (DV) | 1                              | 0.291  | 0.014 | \[0.26, 0.32\] | 0.434  | 0.017 | \[0.40, 0.47\] | 123.292 | 0.000 |     0.24 | 0.000    |
+|                            | 2                              | 0.022  | 0.005 | \[0.01, 0.03\] | 0.060  | 0.007 | \[0.05, 0.07\] |         |       |          | 0.000    |
+|                            | 3                              | 0.215  | 0.013 | \[0.19, 0.24\] | 0.252  | 0.014 | \[0.22, 0.28\] |         |       |          | 0.049    |
+|                            | 4                              | 0.213  | 0.012 | \[0.19, 0.24\] | 0.163  | 0.012 | \[0.14, 0.19\] |         |       |          | 0.010    |
+|                            | 5                              | 0.258  | 0.013 | \[0.23, 0.28\] | 0.091  | 0.011 | \[0.07, 0.11\] |         |       |          | 0.000    |
 
-    ## Error in cats[["p 1 vs 2"]] <- NA: object 'cats' not found
-
-    ## Error in cats$`p 1 vs 2`[grep(i, cats$Variable):(grep(i, cats$Variable) + : object 'cats' not found
-
-    ## Error in eval(expr, envir, enclos): object 'cats' not found
-
-    ## Error in rownames(cats) <- NULL: object 'cats' not found
-
-    ## Error in is.data.frame(x): object 'cats' not found
-
-    ## Error in knitr::kable(cats, digits = 2, caption = "Class differences in categorical auxiliary variables."): object 'cats' not found
+Table 4: Class differences in categorical auxiliary variables.
 
 <div id="refs" class="references csl-bib-body hanging-indent">
 
