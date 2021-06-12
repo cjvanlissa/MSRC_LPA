@@ -10,6 +10,9 @@ df <- read.spss("Goodman data 8_19 1.30.21 for Caspar.sav", to.data.frame = T)
 # Retain only cases with 1 attempt or more
 df$exclude <- 0
 df$exclude[which(df$CDE13 > 0)] <- 1
+# which(rowSums(is.na(df[c("CDE7_NEW", "CDE8", "CDE9", "CDE10", "CDE11", 
+#                          "CDE12", "CDE13","CDE17")])) == 8)
+#df$exclude <- 0
 
 # 3. Military Service Auxiliary Variable - Can you please remove/exclude from analyses the participants for whom it's unclear whether they are currently (vs. previously) serving when looking at military service as an auxiliary variable?
 df$exclude[df$Any_Service == "served but unclear if still serving (cougle)"] <- 0
