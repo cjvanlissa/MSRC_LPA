@@ -1,6 +1,6 @@
 Results MSRC latent class analysis
 ================
-12 June, 2021
+10 November, 2021
 
 **NOTE: I’ve written a first-glance interpretation of the results as a
 placeholder. Please interpret the results substantively at your own
@@ -97,7 +97,7 @@ For all indicator variables, the proportion of responses by response
 category and latent class are displayed in Figure
 <a href="#fig:figpresprob">1</a>. These same results are rescaled to the
 approximate number of participants per class (based on summed posterior
-class probabilities) in Figure <a href="#fig:figpres">2</a>. Both
+class probabilities) in Figure <a href="#fig:figpres">3</a>. Both
 figures show that participants in the first class were relatively more
 likely to report higher scores on being certain that their attempt would
 be fatal and lethal, intent to die, and a belief that their attempt
@@ -117,9 +117,19 @@ responses by response category and latent class.
 
 <div class="figure">
 
+<img src="manuscript_files/figure-gfm/figpresprob2-1.png" alt="Results of the two-class latent class model for future attempts. Proportion of responses by response category and latent class."  />
+<p class="caption">
+Figure 2: Results of the two-class latent class model for future
+attempts. Proportion of responses by response category and latent class.
+</p>
+
+</div>
+
+<div class="figure">
+
 <img src="manuscript_files/figure-gfm/figpres-1.png" alt="Results of the two-class latent class model. Proportion of responses by response category and latent class, rescaled to the number of participants per latent class (based on posterior class probability)."  />
 <p class="caption">
-Figure 2: Results of the two-class latent class model. Proportion of
+Figure 3: Results of the two-class latent class model. Proportion of
 responses by response category and latent class, rescaled to the number
 of participants per latent class (based on posterior class probability).
 </p>

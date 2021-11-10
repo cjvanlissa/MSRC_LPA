@@ -161,11 +161,21 @@ df_plot$Variable <- ordered(df_plot$Variable,
                             levels = unique(df_plot$Variable),
                             labels = rename_vars[unique(df_plot$Variable)])
 
-
+df_plot$Class <- ordered(df_plot$Class, levels = c("1", "2"), labels = c("Higher-Risk History", "Lower-Risk History"))
+df_attempt <- df_plot[df_plot$Variable == "Will likely attempt", ]
+df_plot <- df_plot[!df_plot$Variable == "Will likely attempt", ]
 p_res_prob <- ggplot(df_plot, aes(x = Class, y = est, fill = Category)) + geom_bar(stat = "identity", position = position_fill(reverse = TRUE)) + facet_wrap(~Variable, nrow = 4, scales = "free") + ylab(NULL) + theme_bw()# + theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
 ggsave("p_res_prob.png", device = "png", width = 200, height = 180, units = "mm", dpi = 300)
 p_res_prob
 ```
+
+```{r figpresprob2, include = TRUE, fig.cap="Results of the two-class latent class model for future attempts. Proportion of responses by response category and latent class."}
+p_res_prob2 <- ggplot(df_attempt, aes(x = Class, y = est, fill = Category)) + geom_bar(stat = "identity", position = position_fill(reverse = TRUE)) + ylab(NULL) + theme_bw()# + theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+ggsave("p_res_prob2.png", device = "png", width = 200, height = 180, units = "mm", dpi = 300)
+p_res_prob2
+```
+
+
 
 ```{r figpres, include = TRUE, fig.cap="Results of the two-class latent class model. Proportion of responses by response category and latent class, rescaled to the number of participants per latent class (based on posterior class probability)."}
 p_res <- ggplot(df_plot, aes(x = Category, y = Frequency, fill = Class)) + geom_bar(stat = "identity", position = position_stack(reverse = TRUE)) + facet_wrap(~Variable, nrow = 4, scales = "free_x") + xlab(NULL) + theme_bw()
